@@ -6,22 +6,28 @@ import sys
 
 from underthesea import word_tokenize
 
-
+# Hàm tách từ tiếng Việt sử dụng thư viện underthesea
 def tokenize_vn(text):
     return word_tokenize(text)
 
-
+# Giúp terminal hiển thị tiếng Việt đúng cách
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 
+# Lấy đường dẫn cơ sở của ứng dụng
 _BASE = os.path.dirname(os.path.abspath(__file__))
+
+# Tạo ứng dụng Flask với cấu hình thư mục template và static
 app = Flask(
     __name__,
     template_folder=os.path.join(_BASE, "templates"),
     static_folder=os.path.join(_BASE, "static"),
 )
 
+# Hàm tạo đường dẫn tuyệt đối cho các file cần thiết
 _p = lambda name: os.path.join(_BASE, name)
+
+
 try:
     with open(_p("model.pkl"), "rb") as f:
         model = pickle.load(f)
@@ -121,10 +127,12 @@ def home():
 
 
 @app.route("/predict", methods=["POST"])
+
 def predict():
     if not model or not vectorizer:
         return jsonify({"error": "Mô hình chưa được tải, vui lòng kiểm tra lại file model.pkl"}), 500
 
+    # Lấy dữ liệu JSON từ người dùng và kiểm tra nội dung
     data = request.get_json() or {}
     text = (data.get("text") or "").strip()
     if not text:
@@ -135,6 +143,8 @@ def predict():
         raw = model.predict(vec)[0]
         label_s = str(raw.item() if hasattr(raw, "item") else raw)
         out = {"label": label_s, "category": category_display(label_s)}
+
+        # Thông tin độ tin cậy nếu mô hình hỗ trợ predict_proba
         if hasattr(model, "predict_proba"):
             out["confidence"] = float(max(model.predict_proba(vec)[0]))
         return jsonify(out)
